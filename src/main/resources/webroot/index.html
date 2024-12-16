@@ -11,7 +11,9 @@
             padding: 0;
             background-color: #f4f4f4;
             color: #333;
-
+            height: 100vh; /* Ensures the body takes full height */
+            display: flex;
+            flex-direction: column;
         }
         header {
             background-color: #333;
@@ -77,12 +79,15 @@
     eventSource.onmessage = function(event) {
         const data = JSON.parse(event.data); // Parse the JSON data from the message
 
-        // Format the message as a one-liner
-        const key = data.key;
-        const newField = JSON.stringify(data.newField);
-        const oldField = JSON.stringify(data.oldField);
+        // Extract the field name from the first key in newField (or oldField)
+        const fieldName = Object.keys(data.newField)[0]; // Get the first key from the object
 
-        const formattedMessage = `Key: ${key} - New Field: ${newField} - Old Field: ${oldField}`;
+        // Get the old and new values
+        const newValue = data.newField[fieldName];
+        const oldValue = data.oldField[fieldName];
+
+        // Format the message as a more concise one-liner
+        const formattedMessage = `${data.key} - ${fieldName} - Old: ${oldValue} - New: ${newValue}`;
 
         // Create a new div for the update and append it to the container
         const updateElement = document.createElement('div');

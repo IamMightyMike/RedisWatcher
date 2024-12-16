@@ -11,9 +11,6 @@
             padding: 0;
             background-color: #f4f4f4;
             color: #333;
-            height: 100vh; /* Ensures the body takes full height */
-            display: flex;
-            flex-direction: column;
         }
         header {
             background-color: #333;
@@ -37,6 +34,29 @@
             background-color: #e0e0e0;
             border-radius: 3px;
             font-size: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            align-items: center;
+        }
+        .update button {
+            border: none;
+            padding: 8px 15px;
+            font-size: 14px;
+            border-radius: 5px;
+            cursor: not-allowed; /* Non-clickable */
+        }
+        .key-button {
+            background-color: #a0ced9;
+        }
+        .field-button {
+            background-color: #ffee93;
+        }
+        .old-value-button {
+            background-color: #ffc09f;
+        }
+        .new-value-button {
+            background-color: #adf7b6;
         }
         #clearButton {
             position: fixed;
@@ -86,13 +106,32 @@
         const newValue = data.newField[fieldName];
         const oldValue = data.oldField[fieldName];
 
-        // Format the message as a more concise one-liner
-        const formattedMessage = `${data.key} - ${fieldName} - Old: ${oldValue} - New: ${newValue}`;
-
-        // Create a new div for the update and append it to the container
+        // Create a new div for the update and set the class
         const updateElement = document.createElement('div');
         updateElement.classList.add('update');
-        updateElement.textContent = formattedMessage;
+
+        // Create buttons for each part of the message with respective classes
+        const keyButton = document.createElement('button');
+        keyButton.classList.add('key-button');
+        keyButton.textContent = data.key;
+
+        const fieldButton = document.createElement('button');
+        fieldButton.classList.add('field-button');
+        fieldButton.textContent = fieldName;
+
+        const oldValueButton = document.createElement('button');
+        oldValueButton.classList.add('old-value-button');
+        oldValueButton.textContent = `Old: ${oldValue}`;
+
+        const newValueButton = document.createElement('button');
+        newValueButton.classList.add('new-value-button');
+        newValueButton.textContent = `New: ${newValue}`;
+
+        // Append the buttons to the update element
+        updateElement.appendChild(keyButton);
+        updateElement.appendChild(fieldButton);
+        updateElement.appendChild(oldValueButton);
+        updateElement.appendChild(newValueButton);
 
         // Add the update to the top of the container (to always show the latest update)
         updatesContainer.insertBefore(updateElement, updatesContainer.firstChild);

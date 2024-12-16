@@ -11,6 +11,7 @@
             padding: 0;
             background-color: #f4f4f4;
             color: #333;
+
         }
         header {
             background-color: #333;
@@ -26,6 +27,7 @@
             border-radius: 5px;
             max-height: 400px;
             overflow-y: scroll;
+            flex: 1; /* Takes up remaining space */
         }
         .update {
             margin: 10px 0;
@@ -33,6 +35,21 @@
             background-color: #e0e0e0;
             border-radius: 3px;
             font-size: 14px;
+        }
+        #clearButton {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #clearButton:hover {
+            background-color: #555;
         }
     </style>
 </head>
@@ -45,6 +62,9 @@
 <div id="updates">
     <!-- Updates will be displayed here -->
 </div>
+
+<!-- Clear button fixed to the bottom right -->
+<button id="clearButton">Clear List</button>
 
 <script>
     // Establish a connection to the SSE endpoint
@@ -62,7 +82,7 @@
         const newField = JSON.stringify(data.newField);
         const oldField = JSON.stringify(data.oldField);
 
-        const formattedMessage = `Key: ${key} - Old Field: ${oldField} - New Field: ${newField} `;
+        const formattedMessage = `Key: ${key} - New Field: ${newField} - Old Field: ${oldField}`;
 
         // Create a new div for the update and append it to the container
         const updateElement = document.createElement('div');
@@ -78,6 +98,12 @@
         console.error('EventSource failed:', error);
         eventSource.close(); // Close the connection on error
     };
+
+    // Add functionality to the clear button
+    const clearButton = document.getElementById('clearButton');
+    clearButton.addEventListener('click', () => {
+        updatesContainer.innerHTML = ''; // Clear the updates container
+    });
 </script>
 
 </body>

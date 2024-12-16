@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reactive Web Server</title>
+    <script>
+        // Create a new EventSource to listen for server-sent events
+        const eventSource = new EventSource("/events");
+
+        eventSource.onmessage = function(event) {
+            // Parse the received JSON data
+            const data = JSON.parse(event.data);
+
+            // Update the HTML content with the new data
+            document.getElementById("key").textContent = "Key: " + data.key;
+            document.getElementById("newField").textContent = "New Field: " + JSON.stringify(data.newField, null, 2);
+            document.getElementById("oldField").textContent = "Old Field: " + JSON.stringify(data.oldField, null, 2);
+        };
+    </script>
+</head>
+<body>
+<h1>Reactive Web Server</h1>
+<p id="key">Key: Waiting for updates...</p>
+<p id="newField">New Field: Waiting for updates...</p>
+<p id="oldField">Old Field: Waiting for updates...</p>
+</body>
+</html>

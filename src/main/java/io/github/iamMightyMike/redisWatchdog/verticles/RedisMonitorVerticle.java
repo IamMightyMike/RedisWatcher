@@ -38,90 +38,7 @@ public class RedisMonitorVerticle extends AbstractVerticle {
                             .onFailure(error -> System.err.println("Failed to subscribe: " + error.getMessage()));
 
 
-                    connection.handler(message -> {
-
-                        System.out.println("-------> " + message);
-                        if(message.type() == ResponseType.PUSH && message.stream().collect(Collectors.toList()).size() > 2) {
-                            if ("__keyevent@0__:hset".equals(message.get(2).toString())) {
-                                String daKey = message.get(3).toString();
-                                System.out.println("HSET -> " + message.get(3).toString());
-
-                                connection.send(Request.cmd(Command.HGETALL).arg(daKey))
-                                        .onSuccess(response -> {
-                                            if(redisData.containsKey(daKey)){
-                                                //System.out.println("ANTES -> " + redisData.get(daKey)+ " - NOW -> " + response);
-
-                                                //La response puede traer N fields con sus valores. Hacer un método para actualizar el HashMap
-                                                //Hacer un método para encontrar lo que ha cambiado en el hashmap. Tenemos la antigua key, con N field:value y la nueva key con N field:value. Hay que encontrar la diferencia y usar tan solo eso.
-
-                                                JsonObject moddedKeyObject = findModifiedOrDeletedField(response,daKey);
-                                                updateRedisData(response,daKey);
-
-                                                eventBus.publish("redis.data.update", moddedKeyObject);
-                                            }
-                                            else {
-
-                                                //System.out.println("NOW -> " + response);
-                                                String field = response.getKeys().stream().findFirst().orElse("");
-                                                String value = response.get(field).toString();
-
-                                                Object valuesForKeyObject =  redisData.get(daKey);
-
-                                                //if(valuesForKeyObject != null && valuesForKeyObject instanceof Map){
-//
-                                                //    HashMap<String,String> valuesForKey = (HashMap<String,String>)valuesForKeyObject;
-                                                //    valuesForKey.put(field,value);
-//
-                                                //}else {
-                                                //    redisData.put(daKey, Map.of(field, value));
-                                                //}
-
-                                                HashMap<String,String> newKey = new HashMap<>();
-                                                newKey.put(field, value);
-                                                redisData.put(daKey, newKey);
-                                                //redisData.put(daKey, Map.of(field, value));
-
-                                                JsonObject newValueObject = new JsonObject()
-                                                        .put(field,value);
-
-                                                JsonObject keyObject = new JsonObject()
-                                                        .put("key", daKey)
-                                                        .put("newField", newValueObject);
-
-                                                eventBus.publish("redis.data.update", keyObject);
-                                            }
-                                        });
-
-                            } else if ("__keyevent@0__:hdel".equals(message.get(2).toString())) {
-                                System.out.println("DEL -> " + message.get(3).toString());
-                                String daKey = message.get(3).toString();
-                                connection.send(Request.cmd(Command.HGETALL).arg(daKey))
-                                        .onSuccess(response -> {
-
-                                            JsonObject deletedKeyObject = findModifiedOrDeletedField(response,daKey);
-                                            JsonObject deletedField = deletedKeyObject.getJsonObject("oldField");
-                                            String deletedFieldName = deletedField.stream().map(entry -> entry.getKey()).findFirst().orElse(null);
-
-                                            if(deletedFieldName != null){
-
-                                                Object valuesForKeyObject =  redisData.get(daKey);
-
-                                                if(valuesForKeyObject != null && valuesForKeyObject instanceof Map){
-//
-                                                    HashMap<String,String> valuesForKey = (HashMap<String,String>)valuesForKeyObject;
-                                                    valuesForKey.remove(deletedFieldName);
-                                                    redisData.put(daKey,valuesForKey);
-                                                }
-
-                                            }
-                                            eventBus.publish("redis.data.update", deletedKeyObject);
-                                        });
-
-                            }else if ("__keyevent@0__:set".equals(message.get(2).toString())) {
-                                System.out.println("SET -> " + message.get(3).toString());
-                            }
-                        }
-                    });
+                    connection.handler(message -> {handleMessage(message,connection);});
 
 
                 })
@@ -133,62 +50,91 @@ public class RedisMonitorVerticle extends AbstractVerticle {
 
     }
 
-    //private void handleMessage(Response message,RedisConnection connection){
+    private void handleMessage(Response message,RedisConnection connection){
+
+        //System.out.println("HandleMessage -------> " + message);
+        if(message.type() == ResponseType.PUSH && message.stream().collect(Collectors.toList()).size() > 2) {
+            if ("__keyevent@0__:hset".equals(message.get(2).toString())) {
+                String daKey = message.get(3).toString();
+                System.out.println("HSET -> " + message.get(3).toString());
+
+                connection.send(Request.cmd(Command.HGETALL).arg(daKey))
+                        .onSuccess(response -> {
+                            if(redisData.containsKey(daKey)){
+                                //System.out.println("ANTES -> " + redisData.get(daKey)+ " - NOW -> " + response);
+
+                                //La response puede traer N fields con sus valores. Hacer un método para actualizar el HashMap
+                                //Hacer un método para encontrar lo que ha cambiado en el hashmap. Tenemos la antigua key, con N field:value y la nueva key con N field:value. Hay que encontrar la diferencia y usar tan solo eso.
+
+                                JsonObject moddedKeyObject = findModifiedOrDeletedField(response,daKey);
+                                updateRedisData(response,daKey);
+
+                                eventBus.publish("redis.data.update", moddedKeyObject);
+                            }
+                            else {
+
+                                //System.out.println("NOW -> " + response);
+                                String field = response.getKeys().stream().findFirst().orElse("");
+                                String value = response.get(field).toString();
+
+                                Object valuesForKeyObject =  redisData.get(daKey);
+
+                                //if(valuesForKeyObject != null && valuesForKeyObject instanceof Map){
 //
-    //    System.out.println("-------> " + message);
-    //    if(message.type() == ResponseType.PUSH && message.stream().collect(Collectors.toList()).size() > 2) {
-    //        if ("__keyevent@0__:hset".equals(message.get(2).toString())) {
-    //            String daKey = message.get(3).toString();
-    //            System.out.println("HSET -> " + message.get(3).toString());
+                                //    HashMap<String,String> valuesForKey = (HashMap<String,String>)valuesForKeyObject;
+                                //    valuesForKey.put(field,value);
 //
-    //            connection.send(Request.cmd(Command.HGETALL).arg(daKey))
-    //                    .onSuccess(response -> {
-    //                        if(redisData.containsKey(daKey)){
-    //                            //System.out.println("ANTES -> " + redisData.get(daKey)+ " - NOW -> " + response);
+                                //}else {
+                                //    redisData.put(daKey, Map.of(field, value));
+                                //}
+
+                                HashMap<String,String> newKey = new HashMap<>();
+                                newKey.put(field, value);
+                                redisData.put(daKey, newKey);
+                                //redisData.put(daKey, Map.of(field, value));
+
+                                JsonObject newValueObject = new JsonObject()
+                                        .put(field,value);
+
+                                JsonObject keyObject = new JsonObject()
+                                        .put("key", daKey)
+                                        .put("newField", newValueObject);
+
+                                eventBus.publish("redis.data.update", keyObject);
+                            }
+                        });
+
+            } else if ("__keyevent@0__:hdel".equals(message.get(2).toString())) {
+                System.out.println("DEL -> " + message.get(3).toString());
+                String daKey = message.get(3).toString();
+                connection.send(Request.cmd(Command.HGETALL).arg(daKey))
+                        .onSuccess(response -> {
+
+                            JsonObject deletedKeyObject = findModifiedOrDeletedField(response,daKey);
+                            JsonObject deletedField = deletedKeyObject.getJsonObject("oldField");
+                            String deletedFieldName = deletedField.stream().map(entry -> entry.getKey()).findFirst().orElse(null);
+
+                            if(deletedFieldName != null){
+
+                                Object valuesForKeyObject =  redisData.get(daKey);
+
+                                if(valuesForKeyObject != null && valuesForKeyObject instanceof Map){
 //
-    //                            //La response puede traer N fields con sus valores. Hacer un método para actualizar el HashMap
-    //                            //Hacer un método para encontrar lo que ha cambiado en el hashmap. Tenemos la antigua key, con N field:value y la nueva key con N field:value. Hay que encontrar la diferencia y usar tan solo eso.
-//
-    //                            JsonObject moddedKeyObject = findModifiedOrDeletedField(response,daKey);
-    //                            updateRedisData(response,daKey);
-//
-    //                            eventBus.publish("redis.data.update", moddedKeyObject);
-    //                        }
-    //                        else {
-//
-    //                            //System.out.println("NOW -> " + response);
-    //                            String field = response.getKeys().stream().findFirst().orElse("");
-    //                            String value = response.get(field).toString();
-//
-    //                            redisData.put(daKey, Map.of(field,value));
-//
-    //                            JsonObject newValueObject = new JsonObject()
-    //                                    .put(field,value);
-//
-    //                            JsonObject keyObject = new JsonObject()
-    //                                    .put("key", daKey)
-    //                                    .put("newField", newValueObject);
-//
-    //                            eventBus.publish("redis.data.update", keyObject);
-    //                        }
-    //                    });
-//
-    //        } else if ("__keyevent@0__:hdel".equals(message.get(2).toString())) {
-    //            System.out.println("DEL -> " + message.get(3).toString());
-    //            String daKey = message.get(3).toString();
-    //            connection.send(Request.cmd(Command.HGETALL).arg(daKey))
-    //                    .onSuccess(response -> {
-//
-    //                        JsonObject moddedKeyObject = findModifiedOrDeletedField(response,daKey);
-//
-    //                    });
-//
-    //        }else if ("__keyevent@0__:set".equals(message.get(2).toString())) {
-    //            System.out.println("SET -> " + message.get(3).toString());
-    //        }
-    //    }
-//
-    //}
+                                    HashMap<String,String> valuesForKey = (HashMap<String,String>)valuesForKeyObject;
+                                    valuesForKey.remove(deletedFieldName);
+                                    redisData.put(daKey,valuesForKey);
+                                }
+
+                            }
+                            eventBus.publish("redis.data.update", deletedKeyObject);
+                        });
+
+            }else if ("__keyevent@0__:set".equals(message.get(2).toString())) {
+                System.out.println("SET -> " + message.get(3).toString());
+            }
+        }
+
+    }
 
     public void setRedisData(HashMap<String, Object> redisData) {
         this.redisData = redisData;
@@ -221,8 +167,8 @@ public class RedisMonitorVerticle extends AbstractVerticle {
             Set<String> responseFields = hsetResponse.getKeys();
             Set<String> redisDataFields = keyPrevValue.keySet();
 
-            System.out.println("Keys HGETALL " +hsetResponse.getKeys().stream().collect(Collectors.joining(",")));
-            System.out.println("Keys RedisData " +((HashMap<String,String>)redisData.get(key)).keySet().stream().collect(Collectors.joining(",")));
+            //System.out.println("Keys HGETALL " +hsetResponse.getKeys().stream().collect(Collectors.joining(",")));
+            //System.out.println("Keys RedisData " +((HashMap<String,String>)redisData.get(key)).keySet().stream().collect(Collectors.joining(",")));
 
             if(responseSize == storedKeySize){
                 //Field modificado

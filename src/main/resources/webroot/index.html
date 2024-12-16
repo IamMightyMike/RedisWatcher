@@ -3,26 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reactive Web Server</title>
-    <script>
-        // Create a new EventSource to listen for server-sent events
-        const eventSource = new EventSource("/events");
-
-        eventSource.onmessage = function(event) {
-            // Parse the received JSON data
-            const data = JSON.parse(event.data);
-
-            // Update the HTML content with the new data
-            document.getElementById("key").textContent = "Key: " + data.key;
-            document.getElementById("newField").textContent = "New Field: " + JSON.stringify(data.newField, null, 2);
-            document.getElementById("oldField").textContent = "Old Field: " + JSON.stringify(data.oldField, null, 2);
-        };
-    </script>
+    <title>Redis Watchdog Updates</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        header {
+            background-color: #333;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        #updates {
+            margin: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: scroll;
+        }
+        .update {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #e0e0e0;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
-<h1>Reactive Web Server</h1>
-<p id="key">Key: Waiting for updates...</p>
-<p id="newField">New Field: Waiting for updates...</p>
-<p id="oldField">Old Field: Waiting for updates...</p>
+
+<header>
+    <h1>Redis Watchdog Updates</h1>
+</header>
+
+<div id="updates">
+    <!-- Updates will be displayed here -->
+</div>
+
+<script>
+    // Establish a connection to the SSE endpoint
+    const eventSource = new EventSource('/events');
+
+    // Get the container element where the updates will be displayed
+    const updatesContainer = document.getElementById('updates');
+
+    // Listen for incoming messages (SSE)
+    eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data); // Parse the JSON data from the message
+
+        // Format the message as a one-liner
+        const key = data.key;
+        const newField = JSON.stringify(data.newField);
+        const oldField = JSON.stringify(data.oldField);
+
+        const formattedMessage = `Key: ${key} - Old Field: ${oldField} - New Field: ${newField} `;
+
+        // Create a new div for the update and append it to the container
+        const updateElement = document.createElement('div');
+        updateElement.classList.add('update');
+        updateElement.textContent = formattedMessage;
+
+        // Add the update to the top of the container (to always show the latest update)
+        updatesContainer.insertBefore(updateElement, updatesContainer.firstChild);
+    };
+
+    // Optional: Handle errors
+    eventSource.onerror = function(error) {
+        console.error('EventSource failed:', error);
+        eventSource.close(); // Close the connection on error
+    };
+</script>
+
 </body>
 </html>

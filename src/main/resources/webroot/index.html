@@ -11,7 +11,7 @@
             padding: 0;
             background-color: #f4f4f4;
             color: #333;
-            height: 100vh; /* Ensures the body takes full height */
+            height: 100vh;
             display: flex;
             flex-direction: column;
         }
@@ -41,8 +41,8 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             max-height: 400px;
-            overflow-y: scroll;
-            flex: 1; /* Takes up remaining space */
+            overflow-y: auto;
+            flex: 1;
         }
         .update {
             margin: 10px 0;
@@ -55,12 +55,15 @@
             gap: 5px;
             align-items: center;
         }
+        .update.hidden {
+            display: none;
+        }
         .update button {
             border: none;
             padding: 8px 15px;
             font-size: 14px;
             border-radius: 5px;
-            cursor: not-allowed; /* Non-clickable */
+            cursor: not-allowed;
         }
         .key-button {
             background-color: #a0ced9;
@@ -97,89 +100,93 @@
     <h1>Redis Watchdog Updates</h1>
 </header>
 
-<!-- Filter Fields -->
 <div class="filter-container">
     <input type="text" id="filterKey" placeholder="Filter by Key" />
     <input type="text" id="filterField" placeholder="Filter by Field" />
 </div>
 
 <div id="updates">
-    <!-- Updates will be displayed here -->
+    <!-- Updates will be dynamically added here -->
 </div>
 
-<!-- Clear button fixed to the bottom right -->
 <button id="clearButton">Clear List</button>
 
 <script>
-    // Establish a connection to the SSE endpoint
     const eventSource = new EventSource('/events');
-
-    // Get the container element where the updates will be displayed
     const updatesContainer = document.getElementById('updates');
-
-    // Filter inputs
     const filterKey = document.getElementById('filterKey');
     const filterField = document.getElementById('filterField');
 
-    // Listen for incoming messages (SSE)
+    // Function to check if an update matches the filters
+    const matchesFilters = (update, keyFilter, fieldFilter) => {
+        const key = update.getAttribute('data-key').toLowerCase();
+        const field = update.getAttribute('data-field').toLowerCase();
+        return key.includes(keyFilter.toLowerCase()) && field.includes(fieldFilter.toLowerCase());
+    };
+
+    // Function to apply filters to all updates
+    const applyFilters = () => {
+        const keyFilter = filterKey.value;
+        const fieldFilter = filterField.value;
+        const updates = document.querySelectorAll('.update');
+
+        updates.forEach(update => {
+            if (matchesFilters(update, keyFilter, fieldFilter)) {
+                update.classList.remove('hidden');
+            } else {
+                update.classList.add('hidden');
+            }
+        });
+    };
+
+    // Listen for changes in the filter fields
+    filterKey.addEventListener('input', applyFilters);
+    filterField.addEventListener('input', applyFilters);
+
+    // Listen for incoming SSE messages
     eventSource.onmessage = function(event) {
-        const data = JSON.parse(event.data); // Parse the JSON data from the message
-
-        // Extract the field name from the first key in newField (or oldField)
-        const fieldName = Object.keys(data.newField)[0]; // Get the first key from the object
-
-        // Get the old and new values
+        const data = JSON.parse(event.data);
+        const fieldName = Object.keys(data.newField)[0];
         const newValue = data.newField[fieldName];
         const oldValue = data.oldField[fieldName];
 
-        // Filter logic
-        const keyMatches = data.key.toLowerCase().includes(filterKey.value.toLowerCase());
-        const fieldMatches = fieldName.toLowerCase().includes(filterField.value.toLowerCase());
+        const updateElement = document.createElement('div');
+        updateElement.classList.add('update');
+        updateElement.setAttribute('data-key', data.key); // For filtering
+        updateElement.setAttribute('data-field', fieldName); // For filtering
 
-        // If the update matches both the key and field filter, display it
-        if (keyMatches && fieldMatches) {
-            // Create a new div for the update and set the class
-            const updateElement = document.createElement('div');
-            updateElement.classList.add('update');
+        const keyButton = document.createElement('button');
+        keyButton.classList.add('key-button');
+        keyButton.textContent = data.key;
 
-            // Create buttons for each part of the message with respective classes
-            const keyButton = document.createElement('button');
-            keyButton.classList.add('key-button');
-            keyButton.textContent = data.key;
+        const fieldButton = document.createElement('button');
+        fieldButton.classList.add('field-button');
+        fieldButton.textContent = fieldName;
 
-            const fieldButton = document.createElement('button');
-            fieldButton.classList.add('field-button');
-            fieldButton.textContent = fieldName;
+        const oldValueButton = document.createElement('button');
+        oldValueButton.classList.add('old-value-button');
+        oldValueButton.textContent = `Old: ${oldValue}`;
 
-            const oldValueButton = document.createElement('button');
-            oldValueButton.classList.add('old-value-button');
-            oldValueButton.textContent = `Old: ${oldValue}`;
+        const newValueButton = document.createElement('button');
+        newValueButton.classList.add('new-value-button');
+        newValueButton.textContent = `New: ${newValue}`;
 
-            const newValueButton = document.createElement('button');
-            newValueButton.classList.add('new-value-button');
-            newValueButton.textContent = `New: ${newValue}`;
+        updateElement.appendChild(keyButton);
+        updateElement.appendChild(fieldButton);
+        updateElement.appendChild(oldValueButton);
+        updateElement.appendChild(newValueButton);
 
-            // Append the buttons to the update element
-            updateElement.appendChild(keyButton);
-            updateElement.appendChild(fieldButton);
-            updateElement.appendChild(oldValueButton);
-            updateElement.appendChild(newValueButton);
-
-            // Add the update to the top of the container (to always show the latest update)
-            updatesContainer.insertBefore(updateElement, updatesContainer.firstChild);
-        }
+        updatesContainer.insertBefore(updateElement, updatesContainer.firstChild);
+        applyFilters(); // Reapply filters after adding a new element
     };
 
-    // Optional: Handle errors
     eventSource.onerror = function(error) {
         console.error('EventSource failed:', error);
-        eventSource.close(); // Close the connection on error
+        eventSource.close();
     };
 
-    // Add functionality to the clear button
-    const clearButton = document.getElementById('clearButton');
-    clearButton.addEventListener('click', () => {
-        updatesContainer.innerHTML = ''; // Clear the updates container
+    document.getElementById('clearButton').addEventListener('click', () => {
+        updatesContainer.innerHTML = '';
     });
 </script>
 

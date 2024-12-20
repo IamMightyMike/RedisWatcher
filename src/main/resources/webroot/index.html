@@ -11,12 +11,28 @@
             padding: 0;
             background-color: #f4f4f4;
             color: #333;
+            height: 100vh; /* Ensures the body takes full height */
+            display: flex;
+            flex-direction: column;
         }
         header {
             background-color: #333;
             color: white;
             padding: 15px;
             text-align: center;
+        }
+        .filter-container {
+            display: flex;
+            justify-content: space-evenly;
+            margin: 20px 0;
+            padding: 10px;
+        }
+        .filter-container input {
+            padding: 8px 15px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 200px;
         }
         #updates {
             margin: 20px;
@@ -81,6 +97,12 @@
     <h1>Redis Watchdog Updates</h1>
 </header>
 
+<!-- Filter Fields -->
+<div class="filter-container">
+    <input type="text" id="filterKey" placeholder="Filter by Key" />
+    <input type="text" id="filterField" placeholder="Filter by Field" />
+</div>
+
 <div id="updates">
     <!-- Updates will be displayed here -->
 </div>
@@ -95,6 +117,10 @@
     // Get the container element where the updates will be displayed
     const updatesContainer = document.getElementById('updates');
 
+    // Filter inputs
+    const filterKey = document.getElementById('filterKey');
+    const filterField = document.getElementById('filterField');
+
     // Listen for incoming messages (SSE)
     eventSource.onmessage = function(event) {
         const data = JSON.parse(event.data); // Parse the JSON data from the message
@@ -106,35 +132,42 @@
         const newValue = data.newField[fieldName];
         const oldValue = data.oldField[fieldName];
 
-        // Create a new div for the update and set the class
-        const updateElement = document.createElement('div');
-        updateElement.classList.add('update');
+        // Filter logic
+        const keyMatches = data.key.toLowerCase().includes(filterKey.value.toLowerCase());
+        const fieldMatches = fieldName.toLowerCase().includes(filterField.value.toLowerCase());
 
-        // Create buttons for each part of the message with respective classes
-        const keyButton = document.createElement('button');
-        keyButton.classList.add('key-button');
-        keyButton.textContent = data.key;
+        // If the update matches both the key and field filter, display it
+        if (keyMatches && fieldMatches) {
+            // Create a new div for the update and set the class
+            const updateElement = document.createElement('div');
+            updateElement.classList.add('update');
 
-        const fieldButton = document.createElement('button');
-        fieldButton.classList.add('field-button');
-        fieldButton.textContent = fieldName;
+            // Create buttons for each part of the message with respective classes
+            const keyButton = document.createElement('button');
+            keyButton.classList.add('key-button');
+            keyButton.textContent = data.key;
 
-        const oldValueButton = document.createElement('button');
-        oldValueButton.classList.add('old-value-button');
-        oldValueButton.textContent = `Old: ${oldValue}`;
+            const fieldButton = document.createElement('button');
+            fieldButton.classList.add('field-button');
+            fieldButton.textContent = fieldName;
 
-        const newValueButton = document.createElement('button');
-        newValueButton.classList.add('new-value-button');
-        newValueButton.textContent = `New: ${newValue}`;
+            const oldValueButton = document.createElement('button');
+            oldValueButton.classList.add('old-value-button');
+            oldValueButton.textContent = `Old: ${oldValue}`;
 
-        // Append the buttons to the update element
-        updateElement.appendChild(keyButton);
-        updateElement.appendChild(fieldButton);
-        updateElement.appendChild(oldValueButton);
-        updateElement.appendChild(newValueButton);
+            const newValueButton = document.createElement('button');
+            newValueButton.classList.add('new-value-button');
+            newValueButton.textContent = `New: ${newValue}`;
 
-        // Add the update to the top of the container (to always show the latest update)
-        updatesContainer.insertBefore(updateElement, updatesContainer.firstChild);
+            // Append the buttons to the update element
+            updateElement.appendChild(keyButton);
+            updateElement.appendChild(fieldButton);
+            updateElement.appendChild(oldValueButton);
+            updateElement.appendChild(newValueButton);
+
+            // Add the update to the top of the container (to always show the latest update)
+            updatesContainer.insertBefore(updateElement, updatesContainer.firstChild);
+        }
     };
 
     // Optional: Handle errors

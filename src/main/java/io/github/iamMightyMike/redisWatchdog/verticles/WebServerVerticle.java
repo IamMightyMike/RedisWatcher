@@ -23,7 +23,7 @@ public class WebServerVerticle extends AbstractVerticle {
         router.route().handler(StaticHandler.create().setWebRoot("webroot"));
 
 
-        eventBus.consumer("redis.data.update", this::handleMessage);
+        eventBus.consumer(SSE_EVENT, this::handleMessage);
 
 
         router.get("/events").handler(ctx -> {
@@ -69,8 +69,8 @@ public class WebServerVerticle extends AbstractVerticle {
 
         if(receivedObject != null){
             System.out.println(" Key -> " + receivedObject.getString("key"));
-            System.out.println(" newField -> " + receivedObject.getString("newField"));
-            System.out.println(" oldField -> " + receivedObject.getString("oldField"));
+            System.out.println("    newField -> " + receivedObject.getString("newField"));
+            System.out.println("    oldField -> " + receivedObject.getString("oldField"));
         }
 
 

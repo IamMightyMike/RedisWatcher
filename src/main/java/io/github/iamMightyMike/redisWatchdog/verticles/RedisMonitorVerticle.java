@@ -1,6 +1,7 @@
 package io.github.iamMightyMike.redisWatchdog.verticles;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.iamMightyMike.redisWatchdog.utils.PropertiesLoader;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
@@ -23,12 +24,22 @@ public class RedisMonitorVerticle extends AbstractVerticle {
 
         System.out.println("RedisMonitorVerticle start");
 
-
-
         eventBus = vertx.eventBus();
 
+        Properties properties = PropertiesLoader.load("application.properties");
+
+        String host = properties.getProperty("redis.host", "127.0.0.1");
+        int port = Integer.parseInt(properties.getProperty("redis.port", "6379"));
+        String password = properties.getProperty("redis.password", null);
+
         // Set Redis options
-        Redis.createClient(vertx, new RedisOptions())
+        RedisOptions redisOptions = new RedisOptions()
+                .setConnectionString("redis://" + host + ":" + port)
+                .setPassword(password);
+
+
+        // Set Redis options
+        Redis.createClient(vertx, redisOptions)
                 .connect()
                 .onSuccess(connection -> {
                     System.out.println("Conectadiiisimo");
@@ -52,7 +63,7 @@ public class RedisMonitorVerticle extends AbstractVerticle {
 
     private void handleMessage(Response message,RedisConnection connection){
 
-        //System.out.println("HandleMessage -------> " + message);
+
         if(message.type() == ResponseType.PUSH && message.stream().collect(Collectors.toList()).size() > 2) {
             if ("__keyevent@0__:hset".equals(message.get(2).toString())) {
                 String daKey = message.get(3).toString();

@@ -7,13 +7,10 @@ public class ConfigSetter {
 
     public static void main(String[] args) {
 
-        //String redisHost = "localhost"; // Replace with your Redis host
-        //int redisPort = 6379;
 
-        String redisHost = "f21-qa-redis-master.es.gestamp.com"; // Replace with your Redis host
-        int redisPort = 80;
+        String redisHost = "localhost"; // Replace with your Redis host
+        int redisPort = 6379;
         String password = "REzQHC3R91YZVMK7DAa9QgzGFVSixfceugEH";
-        //REzQHC3R91YZVMK7DAa9QgzGFVSixfceugEH
 
         Jedis jedis = new Jedis(redisHost, redisPort);
         jedis.auth(password);

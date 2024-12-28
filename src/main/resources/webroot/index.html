@@ -35,25 +35,25 @@
             width: 200px;
         }
         #updates {
-            margin: 20px;
-            padding: 10px;
-            background-color: #fff;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            max-height: 400px;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
             overflow-y: auto;
             flex: 1;
+            display: flex;
+            flex-direction: column;
         }
         .update {
             margin: 10px 0;
             padding: 10px;
-            background-color: #e0e0e0;
-            border-radius: 3px;
-            font-size: 14px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
             display: flex;
             flex-wrap: wrap;
             gap: 5px;
             align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         .update.hidden {
             display: none;
@@ -117,14 +117,12 @@
     const filterKey = document.getElementById('filterKey');
     const filterField = document.getElementById('filterField');
 
-    // Function to check if an update matches the filters
     const matchesFilters = (update, keyFilter, fieldFilter) => {
         const key = update.getAttribute('data-key').toLowerCase();
         const field = update.getAttribute('data-field').toLowerCase();
         return key.includes(keyFilter.toLowerCase()) && field.includes(fieldFilter.toLowerCase());
     };
 
-    // Function to apply filters to all updates
     const applyFilters = () => {
         const keyFilter = filterKey.value;
         const fieldFilter = filterField.value;
@@ -139,11 +137,9 @@
         });
     };
 
-    // Listen for changes in the filter fields
     filterKey.addEventListener('input', applyFilters);
     filterField.addEventListener('input', applyFilters);
 
-    // Listen for incoming SSE messages
     eventSource.onmessage = function(event) {
         const data = JSON.parse(event.data);
         const fieldName = Object.keys(data.newField)[0];
@@ -152,8 +148,8 @@
 
         const updateElement = document.createElement('div');
         updateElement.classList.add('update');
-        updateElement.setAttribute('data-key', data.key); // For filtering
-        updateElement.setAttribute('data-field', fieldName); // For filtering
+        updateElement.setAttribute('data-key', data.key);
+        updateElement.setAttribute('data-field', fieldName);
 
         const keyButton = document.createElement('button');
         keyButton.classList.add('key-button');
@@ -176,8 +172,8 @@
         updateElement.appendChild(oldValueButton);
         updateElement.appendChild(newValueButton);
 
-        updatesContainer.insertBefore(updateElement, updatesContainer.firstChild);
-        applyFilters(); // Reapply filters after adding a new element
+        updatesContainer.appendChild(updateElement);
+        applyFilters();
     };
 
     eventSource.onerror = function(error) {

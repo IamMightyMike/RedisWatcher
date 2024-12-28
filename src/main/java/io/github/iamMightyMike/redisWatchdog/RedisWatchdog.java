@@ -1,5 +1,6 @@
 package io.github.iamMightyMike.redisWatchdog;
 
+import io.github.iamMightyMike.redisWatchdog.utils.PropertiesLoader;
 import io.github.iamMightyMike.redisWatchdog.verticles.RedisMonitorVerticle;
 import io.github.iamMightyMike.redisWatchdog.verticles.WebServerVerticle;
 import io.vertx.core.Vertx;
@@ -9,6 +10,7 @@ import redis.clients.jedis.resps.ScanResult;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 public class RedisWatchdog {
 
@@ -48,7 +50,19 @@ public class RedisWatchdog {
 
         HashMap<String, Object> redisData = new HashMap<>();
 
-        Jedis jedis = new Jedis("127.0.0.1", 6379);
+        Properties properties = PropertiesLoader.load("application.properties");
+
+        String host = properties.getProperty("redis.host", "127.0.0.1");
+        int port = Integer.parseInt(properties.getProperty("redis.port", "6379"));
+        String password = properties.getProperty("redis.password", null);
+
+        Jedis jedis = new Jedis(host, port);
+
+        // Authenticate if the password is provided
+        if (password != null && !password.isEmpty()) {
+            jedis.auth(password);
+        }
+
         String cursor = "0";
         ScanParams scanParams = new ScanParams().match("*").count(100);
 

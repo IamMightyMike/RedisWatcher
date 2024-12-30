@@ -19,8 +19,7 @@ public class RedisWatchdog {
         // Create Vertx instance
         Vertx vertx = Vertx.vertx();
 
-        RedisMonitorVerticle redisMonitorVerticle = new RedisMonitorVerticle();
-        redisMonitorVerticle.setRedisData(loadRedisData());
+        RedisMonitorVerticle redisMonitorVerticle = new RedisMonitorVerticle(loadRedisData());
 
 
         // Deploy the Redis monitoring verticle

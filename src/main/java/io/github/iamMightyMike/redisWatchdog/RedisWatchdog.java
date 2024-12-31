@@ -16,29 +16,30 @@ public class RedisWatchdog {
 
     public static void main(String[] args) {
 
-        // Create Vertx instance
+        // Nueva instancia de Vert.x
         Vertx vertx = Vertx.vertx();
 
         RedisMonitorVerticle redisMonitorVerticle = new RedisMonitorVerticle(loadRedisData());
 
 
-        // Deploy the Redis monitoring verticle
+        // Desplegar verticle de monitorización
         vertx.deployVerticle(redisMonitorVerticle, ar -> {
             if (ar.succeeded()) {
-                System.out.println("RedisMonitorVerticle deployed successfully");
+                System.out.println("RedisMonitorVerticle desplegado con éxito");
             } else {
-                System.out.println("Failed to deploy RedisMonitorVerticle: " + ar.cause().getMessage());
+                System.out.println("Error al desplegar RedisMonitorVerticle: " + ar.cause().getMessage());
             }
         });
 
         WebServerVerticle webServerVerticle = new WebServerVerticle();
 
+        // Desplegar verticle para servicio web
         vertx.deployVerticle(webServerVerticle, res ->{
 
             if (res.succeeded()) {
-                System.out.println("WebServerVerticle deployed successfully");
+                System.out.println("WebServerVerticle desplegado con éxito");
             } else {
-                System.out.println("Failed to deploy WebServerVerticle: " + res.cause().getMessage());
+                System.out.println("Error al desplegar WebServerVerticle: " + res.cause().getMessage());
             }
 
         });
@@ -66,11 +67,11 @@ public class RedisWatchdog {
         ScanParams scanParams = new ScanParams().match("*").count(100);
 
         do {
-            // SCAN operation
+            // Redis SCAN
             ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
             cursor = scanResult.getCursor();
             for (String key : scanResult.getResult()) {
-                // Get the type of the key
+                // Leer tipo de clave
                 String keyType = jedis.type(key);
 
                 //Strategy pattern here?

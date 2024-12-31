@@ -15,26 +15,23 @@ public class WebServerVerticle extends AbstractVerticle {
     @Override
     public void start() throws Exception {
 
-        System.out.println("WebServerVerticle start");
+        System.out.println("WebServerVerticle start INICIO");
         EventBus eventBus = vertx.eventBus();
-
         Router router = Router.router(vertx);
-
         router.route().handler(StaticHandler.create().setWebRoot("webroot"));
 
-
+        //Consumidor de prueba con la única finalidad dep robar a imprimir por pantalla los eventos recibidos por el bus
         eventBus.consumer(SSE_EVENT, this::handleMessage);
 
-
         router.get("/events").handler(ctx -> {
-            // Set the proper content type for SSE
+            // Setear el tipo de contenido para enviar eventos de actualización de Redis al Front
             ctx.response()
                     .putHeader("Content-Type", "text/event-stream")
                     .putHeader("Cache-Control", "no-cache")
                     .putHeader("Connection", "keep-alive")
                     .putHeader("Transfer-Encoding", "chunked");
 
-            // Create a new event bus consumer for sending updates via SSE
+            // Creación de un consumidor para enviar eventos al front
             eventBus.consumer(SSE_EVENT,  message -> {
 
                 Object messageBody = message.body();
@@ -49,13 +46,11 @@ public class WebServerVerticle extends AbstractVerticle {
         });
 
 
-
-
         vertx.createHttpServer().requestHandler(router).listen(8081, res -> {
             if (res.succeeded()) {
-                System.out.println("Web server is running on port 8081");
+                System.out.println("Web server ejecutándose en puerto 8081 8081");
             } else {
-                System.err.println("Failed to start web server: " + res.cause().getMessage());
+                System.err.println("Error al arrancar el Web Server: " + res.cause().getMessage());
             }
         });
 
@@ -66,16 +61,10 @@ public class WebServerVerticle extends AbstractVerticle {
     private void handleMessage(Message<JsonObject> message){
 
         JsonObject receivedObject = message.body();
-
         if(receivedObject != null){
             System.out.println(" Key -> " + receivedObject.getString("key"));
             System.out.println("    newField -> " + receivedObject.getString("newField"));
             System.out.println("    oldField -> " + receivedObject.getString("oldField"));
         }
-
-
-
-
     }
-
 }

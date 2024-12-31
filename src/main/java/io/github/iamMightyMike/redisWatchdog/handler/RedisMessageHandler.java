@@ -42,23 +42,27 @@ public class RedisMessageHandler {
                 .onSuccess(response -> {
                     if(redisData.containsKey(daKey)){
 
+                        //entra por aquí si la clave ya existía en los datos en memoria de Redis, es decir, la clave no es nueva
+
+                        //Actualizar el objeto en memoria
                         JsonObject moddedKeyObject = findModifiedOrDeletedField(response,daKey);
                         updateRedisData(response,daKey);
 
+                        //Publicar el cambio en el bus de eventos de Vert.x
                         eventBus.publish("redis.data.update", moddedKeyObject);
                     }
                     else {
 
-                        //System.out.println("NOW -> " + response);
+                        //entra por aquí si la clave no existía en los datos en memoria de Redis, es decir, la clave ES nueva
                         String field = response.getKeys().stream().findFirst().orElse("");
                         String value = response.get(field).toString();
 
                         Object valuesForKeyObject =  redisData.get(daKey);
 
+                        //Crear la nueva clave dentro del conjunto de claves de Redis en memoria
                         HashMap<String,String> newKey = new HashMap<>();
                         newKey.put(field, value);
                         redisData.put(daKey, newKey);
-                        //redisData.put(daKey, Map.of(field, value));
 
                         JsonObject newValueObject = new JsonObject()
                                 .put(field,value);
@@ -67,6 +71,7 @@ public class RedisMessageHandler {
                                 .put("key", daKey)
                                 .put("newField", newValueObject);
 
+                        //Publicar el cambio en el bus de eventos de Vert.x
                         eventBus.publish("redis.data.update", keyObject);
                     }
                 });
@@ -75,7 +80,7 @@ public class RedisMessageHandler {
 
     private void handleHDel(Response message,RedisConnection connection){
 
-        System.out.println("DEL -> " + message.get(3).toString());
+        System.out.println("HDEL -> " + message.get(3).toString());
         String daKey = message.get(3).toString();
         connection.send(Request.cmd(Command.HGETALL).arg(daKey))
                 .onSuccess(response -> {
@@ -89,7 +94,7 @@ public class RedisMessageHandler {
                         Object valuesForKeyObject =  redisData.get(daKey);
 
                         if(valuesForKeyObject != null && valuesForKeyObject instanceof Map){
-//
+
                             HashMap<String,String> valuesForKey = (HashMap<String,String>)valuesForKeyObject;
                             valuesForKey.remove(deletedFieldName);
                             redisData.put(daKey,valuesForKey);
@@ -130,7 +135,6 @@ public class RedisMessageHandler {
 
             if(responseSize == storedKeySize){
                 //Field modificado
-
                 String modifiedField = responseFields.stream().filter(aField -> {
                     String aResponseValue = hsetResponse.get(aField).toString();
                     String redisDataValue = keyPrevValue.get(aField);
@@ -196,7 +200,7 @@ public class RedisMessageHandler {
         }
         else{
             return null;
-            //Lo que hay guardado en Redis Data no es un map. No se puede hacer nada
+            //Lo que hay guardado en Redis Data no es un map. No debería llegarse a este punto asumiento que todas las claves leídas y guardadas en el HashMap RedisData provengan de HashKeys de Redis
         }
         return null;
     }

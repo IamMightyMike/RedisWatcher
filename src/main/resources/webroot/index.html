@@ -142,9 +142,9 @@
 
     eventSource.onmessage = function(event) {
         const data = JSON.parse(event.data);
-        const fieldName = Object.keys(data.newField)[0];
-        const newValue = data.newField[fieldName];
-        const oldValue = data.oldField[fieldName];
+        const fieldName = Object.keys(data.newField || data.oldField)[0];
+        const newValue = data.newField ? data.newField[fieldName] : "DELETED";
+        const oldValue = data.oldField ? data.oldField[fieldName] : "NEW FIELD";
 
         const updateElement = document.createElement('div');
         updateElement.classList.add('update');

@@ -32,7 +32,7 @@ public class RedisMonitorVerticle extends AbstractVerticle {
     @Override
     public void start() {
 
-        System.out.println("RedisMonitorVerticle start");
+        System.out.println("RedisMonitorVerticle start INICIO");
 
 
         eventBus = vertx.eventBus();
@@ -44,21 +44,19 @@ public class RedisMonitorVerticle extends AbstractVerticle {
         int port = Integer.parseInt(properties.getProperty("redis.port", "6379"));
         String password = properties.getProperty("redis.password", null);
 
-        // Set Redis options
+        //Setear las RedisOptions
         RedisOptions redisOptions = new RedisOptions()
                 .setConnectionString("redis://" + host + ":" + port)
                 .setPassword(password);
 
 
-        // Set Redis options
+        //Instanciar cliente reactivo de Redis
         Redis.createClient(vertx, redisOptions)
                 .connect()
                 .onSuccess(connection -> {
-                    System.out.println("Conectadiiisimo");
-
                     connection.send(Request.cmd(Command.PSUBSCRIBE).arg("*"))
-                            .onSuccess(response -> System.out.println("Subscribed to Redis key events"))
-                            .onFailure(error -> System.err.println("Failed to subscribe: " + error.getMessage()));
+                            .onSuccess(response -> System.out.println("Suscrito a eventos de Redis"))
+                            .onFailure(error -> System.err.println("Error al suscribirse a eventos de Redis: " + error.getMessage()));
 
 
                     connection.handler(message -> {redisMessageHandler.handleMessage(message,connection);});
